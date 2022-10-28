@@ -1,0 +1,29 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31521.260
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{57068D74-71CF-476F-8F05-C093361061F6}") = "ALVR-USB", "ALVR-USB\ALVR-USB.csproj", "{6C486E8C-35F6-4CEF-89AF-8CA9E6A13095}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{528D3825-42A6-4DFE-A283-4D04F9937C74}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{528D3825-42A6-4DFE-A283-4D04F9937C74}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{528D3825-42A6-4DFE-A283-4D04F9937C74}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{528D3825-42A6-4DFE-A283-4D04F9937C74}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6C486E8C-35F6-4CEF-89AF-8CA9E6A13095}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6C486E8C-35F6-4CEF-89AF-8CA9E6A13095}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6C486E8C-35F6-4CEF-89AF-8CA9E6A13095}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6C486E8C-35F6-4CEF-89AF-8CA9E6A13095}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {115144A2-AE87-458A-8F5A-1C01548C0B99}
+	EndGlobalSection
+EndGlobal
