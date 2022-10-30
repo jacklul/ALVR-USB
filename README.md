@@ -11,3 +11,15 @@ Based on [AtlasTheProto/ADBForwarder](https://github.com/AtlasTheProto/ADBForwar
 - Run **ALVR-USB.exe** and connect your headset, launch ALVR app inside the headset to start
 
 If the application refuses to start make sure you have **.NET Framework 4.8** installed, you can [get it here](https://dotnet.microsoft.com/en-us/download/dotnet-framework/net48).
+
+### Configuration file (`ALVR-USB.ini`)
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| debug | false | Should we display extra messages in the console? |
+| logFile | "alvr-usb.log" | File for logging |
+| truncateLog | false | Should we truncate log file for each session? |
+| alvrPath | "ALVR Launcher.exe" | Path to ALVR Launcher executable |
+| adbPath | "adb\adb.exe" | Path to ADB executable |
+| connectCommand | "" | Executed when valid device connects |
+| disconnectCommand | "" | Executed when previously connected valid device disconnects |

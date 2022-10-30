@@ -7,12 +7,14 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using SharpAdbClient;
 using System.Diagnostics;
+using IniParser;
+using IniParser.Model;
 
 namespace ALVRUSB
 {
     internal class Program
     {
-        public const string VERSION = "0.1.0";
+        public const string VERSION = "0.2.0";
         
         private static readonly string[] deviceNames =
         {
@@ -27,31 +29,75 @@ namespace ALVRUSB
         private static readonly AdbClient client = new AdbClient();
         private static readonly AdbServer server = new AdbServer();
         private static readonly IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, AdbClient.AdbServerPort);
+        private static readonly FileIniDataParser iniParser = new FileIniDataParser();
 
-        private static string currentDirectory = null;
-        private static string logFile = "alvr-usb.log";
-        private static string alvrPath = "ALVR Launcher.exe";
-        private static string adbPath = "adb\\adb.exe";
+        private static readonly string currentDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        private static string iniFile = Path.Combine(currentDirectory, Path.GetFileNameWithoutExtension(AppDomain.CurrentDomain.FriendlyName) + ".ini");
+        private static string logFile = Path.Combine(currentDirectory, Path.GetFileNameWithoutExtension(AppDomain.CurrentDomain.FriendlyName).ToLower() + ".log");
+        private static string alvrPath = Path.Combine(currentDirectory, "ALVR Launcher.exe");
+        private static string adbPath = Path.Combine(currentDirectory, "adb\\adb.exe");
+        private static string connectCommand = null;
+        private static string disconnectCommand = null;
         private static bool debug = false;
-        private static bool adbLaunched = false;
+        private static bool logging = false;
+        private static bool truncateLog = false;
 
-        private static void Main(string[] args)
+        private static bool adbLaunched = false;
+        private static string currentDevice = null;
+
+        private static void Main()
         {
             Console.Title = typeof(Program).Assembly.GetName().Name + $" v{VERSION}";
             Console.ResetColor();
             Console.SetWindowSize(100, 15);
-            Console.SetBufferSize(100, 15);
+            Console.SetBufferSize(100, 100);
 
             handler = new ConsoleEventDelegate(ConsoleEventCallback);
             SetConsoleCtrlHandler(handler, true);
 
-            if (args.Contains("--debug"))
-                debug = true;
+            if (File.Exists(iniFile))
+            {
+                IniData iniData = iniParser.ReadFile(iniFile);
 
-            if (!args.Contains("--log"))
-                logFile = null;
+                string debugKey = iniData.GetKey("debug");
+                string logFileKey = iniData.GetKey("logFile");
+                string loggingKey = iniData.GetKey("logging");
+                string truncateLogKey = iniData.GetKey("truncateLog");
+                string alvrPathKey = iniData.GetKey("alvrPath");
+                string adbPathKey = iniData.GetKey("adbPath");
+                string connectCommandKey = iniData.GetKey("connectCommand");
+                string disconnectCommandKey = iniData.GetKey("disconnectCommand");
 
-            currentDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                if (!string.IsNullOrEmpty(debugKey))
+                    debug = bool.Parse(debugKey);
+                
+                if (!string.IsNullOrEmpty(logFileKey))
+                    logFile = logFileKey;
+
+                if (!string.IsNullOrEmpty(loggingKey))
+                    logging = bool.Parse(loggingKey);
+
+                if (!string.IsNullOrEmpty(truncateLogKey))
+                    truncateLog = bool.Parse(truncateLogKey);
+
+                if (!string.IsNullOrEmpty(alvrPathKey))
+                    alvrPath = alvrPathKey;
+
+                if (!string.IsNullOrEmpty(adbPathKey))
+                    adbPath = adbPathKey;
+                
+                if (!string.IsNullOrEmpty(connectCommandKey))
+                    connectCommand = connectCommandKey;
+                
+                if (!string.IsNullOrEmpty(disconnectCommandKey))
+                    disconnectCommand = disconnectCommandKey;
+
+                if (debug) 
+                    LogMessage($"Loaded ini file: {iniFile}", ConsoleColor.Cyan);
+            }
+
+            if (debug) PrintConfig();
+
             if (currentDirectory == null)
             {
                 Console.ForegroundColor = ConsoleColor.Red;
@@ -83,7 +129,7 @@ namespace ALVRUSB
             {
                 logFile = Path.Combine(currentDirectory, logFile);
 
-                if (args.Contains("--log-truncate"))
+                if (truncateLog)
                 {
                     File.WriteAllText(logFile, "");
                     if (debug) LogMessage($"Log set to truncate", ConsoleColor.Cyan);
@@ -92,7 +138,7 @@ namespace ALVRUSB
 
             if (debug)
             {
-                if (logFile != null)
+                if (logging)
                     LogMessage($"Logging is enabled", ConsoleColor.Cyan);
                 else
                     LogMessage($"Logging is disabled", ConsoleColor.Cyan);
@@ -178,6 +224,18 @@ namespace ALVRUSB
         private static void DeviceDisconnected(object sender, DeviceDataEventArgs e)
         {
             LogMessage($"Disconnected device: {e.Device.Serial}", ConsoleColor.DarkRed);
+
+            if (currentDevice == e.Device.Serial)
+            {
+                currentDevice = null;
+
+                if (!string.IsNullOrEmpty(disconnectCommand))
+                {
+                    if (debug) LogMessage($"Executing \"disconnect\" command: {disconnectCommand}", ConsoleColor.Cyan);
+
+                    ExecuteCommand(disconnectCommand);
+                }
+            }
         }
         
         private static void ForwardPorts(DeviceData device)
@@ -197,6 +255,14 @@ namespace ALVRUSB
                     return;
                 }
 
+                if (currentDevice != null)
+                {
+                    LogMessage($"Ports are already forwarded for another device: {currentDevice}", ConsoleColor.Red);
+                    return;
+                }
+
+                currentDevice = deviceData.Serial;
+
                 client.CreateForward(deviceData, 9943, 9943);
                 client.CreateForward(deviceData, 9944, 9944);
 
@@ -204,6 +270,13 @@ namespace ALVRUSB
 
                 if (alvrPath != null)
                     LaunchALVR();
+
+                if (!string.IsNullOrEmpty(connectCommand))
+                {
+                    if (debug) LogMessage($"Executing \"connect\" command: {connectCommand}", ConsoleColor.Cyan);
+
+                    ExecuteCommand(connectCommand);
+                }
 
                 return;
             }
@@ -225,12 +298,10 @@ namespace ALVRUSB
                     {
                         StartInfo = new ProcessStartInfo
                         {
-                            FileName = currentDirectory + "\\" + alvrPath,
+                            FileName = alvrPath,
                             WorkingDirectory = @currentDirectory,
-                            Arguments = "",
                             UseShellExecute = false,
                             RedirectStandardOutput = true,
-                            //CreateNoWindow = true
                         }
                     };
                     process.Start();
@@ -258,7 +329,8 @@ namespace ALVRUSB
         {
             string datetime = "[" + DateTime.Now.ToString() + "] ";
 
-            if (logFile != null) File.AppendAllText(logFile, datetime + message + Environment.NewLine);
+            if (logging)
+                File.AppendAllText(logFile, datetime + message + Environment.NewLine);
 
             if (print)
             {
@@ -272,10 +344,15 @@ namespace ALVRUSB
 
         private static bool ConsoleEventCallback(int eventType)
         {
-            if (adbLaunched && (eventType == 0 || eventType == 2))
+            if (eventType == 0 || eventType == 2)
             {
-                LogMessage("Killing ADB server...", ConsoleColor.Yellow);
-                client.KillAdb();
+                if (adbLaunched)
+                {
+                    LogMessage("Killing ADB server...");
+                    client.KillAdb();
+                }
+
+                LogMessage("Exiting...");
             }
 
             return false;
@@ -286,5 +363,37 @@ namespace ALVRUSB
         private delegate bool ConsoleEventDelegate(int eventType);
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
+
+        private static bool ExecuteCommand(string command)
+        {
+            var cmd = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = "cmd.exe",
+                    Arguments = "/c " + command,
+                    WorkingDirectory = @currentDirectory,
+                    RedirectStandardInput = true,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true,
+                    UseShellExecute = false,
+                }
+            };
+
+            return cmd.Start();
+        }
+
+        private static void PrintConfig()
+        {
+            LogMessage("Configuration:");
+            LogMessage($" debug = {debug}");
+            LogMessage($" logFile = {logFile}");
+            LogMessage($" logging = {logging}");
+            LogMessage($" truncateLog = {truncateLog}");
+            LogMessage($" alvrPath = {alvrPath}");
+            LogMessage($" adbPath = {adbPath}");
+            LogMessage($" connectCommand = {connectCommand}");
+            LogMessage($" disconnectCommand = {disconnectCommand}");
+        }
     }
 }
