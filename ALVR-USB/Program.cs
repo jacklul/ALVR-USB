@@ -14,7 +14,7 @@ namespace ALVRUSB
 {
     internal class Program
     {
-        public const string VERSION = "0.2.0";
+        public const string VERSION = "0.2.1";
         
         private static readonly string[] deviceNames =
         {
@@ -40,7 +40,7 @@ namespace ALVRUSB
         private static string disconnectCommand = null;
         private static bool debug = false;
         private static bool logging = false;
-        private static bool truncateLog = false;
+        private static bool truncateLog = true;
 
         private static bool adbLaunched = false;
         private static string currentDevice = null;
