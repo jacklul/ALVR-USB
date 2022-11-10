@@ -14,7 +14,7 @@ namespace ALVRUSB
 {
     internal class Program
     {
-        public const string VERSION = "0.2.1";
+        public const string VERSION = "0.3.0";
         
         private static readonly string[] deviceNames =
         {
@@ -242,43 +242,54 @@ namespace ALVRUSB
         {
             if (debug) LogMessage($"ForwardPorts: {device}", ConsoleColor.Cyan);
 
-            if (string.IsNullOrEmpty(device.Product)) // DeviceConnected called without product set
+            int maxTries = 5;
+            while (string.IsNullOrEmpty(device.Product)) // DeviceConnected called without product set
+            {
+                foreach (var deviceData in client.GetDevices().Where(deviceData => device.Serial == deviceData.Serial))
+                {
+                    if (!string.IsNullOrEmpty(deviceData.Product))
+                        device = deviceData;
+
+                    break;
+                }
+
+                if (maxTries <= 0)
+                    break;
+
                 Thread.Sleep(1000);
 
-            foreach (var deviceData in client.GetDevices().Where(deviceData => device.Serial == deviceData.Serial))
+                maxTries--;
+            }
+
+            if (debug) LogMessage($"DeviceData: {device.Model} {device.Name} {device.Product} {device.Serial}", ConsoleColor.Cyan);
+
+            if (!deviceNames.Contains(device.Product))
             {
-                if (debug) LogMessage($"DeviceData: {deviceData.Model} {deviceData.Name} {deviceData.Product} {deviceData.Serial}", ConsoleColor.Cyan);
-
-                if (!deviceNames.Contains(deviceData.Product))
-                {
-                    LogMessage($"Skipped device: {(string.IsNullOrEmpty(deviceData.Product) ? deviceData.Serial : deviceData.Product)}", ConsoleColor.Yellow);
-                    return;
-                }
-
-                if (currentDevice != null)
-                {
-                    LogMessage($"Ports are already forwarded for another device: {currentDevice}", ConsoleColor.Red);
-                    return;
-                }
-
-                currentDevice = deviceData.Serial;
-
-                client.CreateForward(deviceData, 9943, 9943);
-                client.CreateForward(deviceData, 9944, 9944);
-
-                LogMessage($"Forwarded ports for device: {deviceData.Serial} ({deviceData.Product})", ConsoleColor.Green);
-
-                if (alvrPath != null)
-                    LaunchALVR();
-
-                if (!string.IsNullOrEmpty(connectCommand))
-                {
-                    if (debug) LogMessage($"Executing \"connect\" command: {connectCommand}", ConsoleColor.Cyan);
-
-                    ExecuteCommand(connectCommand);
-                }
-
+                LogMessage($"Skipped device: {(string.IsNullOrEmpty(device.Product) ? device.Serial : device.Product)}", ConsoleColor.Yellow);
                 return;
+            }
+
+            if (currentDevice != null)
+            {
+                LogMessage($"Ports are already forwarded for another device: {currentDevice}", ConsoleColor.Red);
+                return;
+            }
+
+            currentDevice = device.Serial;
+
+            client.CreateForward(device, 9943, 9943);
+            client.CreateForward(device, 9944, 9944);
+
+            LogMessage($"Forwarded ports for device: {device.Serial} ({device.Product})", ConsoleColor.Green);
+
+            if (alvrPath != null)
+                LaunchALVR();
+
+            if (!string.IsNullOrEmpty(connectCommand))
+            {
+                if (debug) LogMessage($"Executing \"connect\" command: {connectCommand}", ConsoleColor.Cyan);
+
+                ExecuteCommand(connectCommand);
             }
         }
 
