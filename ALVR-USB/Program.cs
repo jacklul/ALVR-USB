@@ -9,6 +9,7 @@ using SharpAdbClient;
 using System.Diagnostics;
 using IniParser;
 using IniParser.Model;
+using System.Collections.Specialized;
 
 namespace ALVRUSB
 {
@@ -44,6 +45,7 @@ namespace ALVRUSB
 
         private static bool adbLaunched = false;
         private static string currentDevice = null;
+        private static NameValueCollection recentDevice = new NameValueCollection();
 
         private static void Main()
         {
@@ -211,19 +213,33 @@ namespace ALVRUSB
                     initialized = true;
                 }
 
+                foreach (string key in recentDevice.AllKeys)
+                {
+                    if (!string.IsNullOrEmpty(recentDevice.Get(key)) && long.TryParse(recentDevice.Get(key), out long timestamp))
+                    {
+                        if (timestamp + 10 < Timestamp())
+                            recentDevice.Remove(key);
+                    }
+                }
+
                 Thread.Sleep(100);
             }
         }
 
         private static void DeviceConnected(object sender, DeviceDataEventArgs e)
         {
-            LogMessage($"Connected device: {e.Device.Serial}", ConsoleColor.DarkGreen);
+            if (!IsRecentDevice(e.Device.Serial))
+                LogMessage($"Connected device: {e.Device.Serial}", ConsoleColor.DarkGreen);
+
             ForwardPorts(e.Device);
         }
 
         private static void DeviceDisconnected(object sender, DeviceDataEventArgs e)
         {
-            LogMessage($"Disconnected device: {e.Device.Serial}", ConsoleColor.DarkRed);
+            if (!IsRecentDevice(e.Device.Serial))
+                LogMessage($"Disconnected device: {e.Device.Serial}", ConsoleColor.DarkRed);
+
+            recentDevice.Set(e.Device.Serial, Timestamp().ToString());
 
             if (currentDevice == e.Device.Serial)
             {
@@ -251,7 +267,9 @@ namespace ALVRUSB
 
                 if (!deviceNames.Contains(deviceData.Product))
                 {
-                    LogMessage($"Skipped device: {(string.IsNullOrEmpty(deviceData.Product) ? deviceData.Serial : deviceData.Product)}", ConsoleColor.Yellow);
+                    if (!IsRecentDevice(device.Serial))
+                        LogMessage($"Skipped device: {(string.IsNullOrEmpty(deviceData.Product) ? deviceData.Serial : deviceData.Product)}", ConsoleColor.Yellow);
+
                     return;
                 }
 
@@ -394,6 +412,19 @@ namespace ALVRUSB
             LogMessage($" adbPath = {adbPath}");
             LogMessage($" connectCommand = {connectCommand}");
             LogMessage($" disconnectCommand = {disconnectCommand}");
+        }
+
+        private static long Timestamp()
+        {
+            return new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds();
+        }
+
+        private static bool IsRecentDevice(string serial)
+        {
+            if (debug)
+                return false;
+
+            return !string.IsNullOrEmpty(recentDevice.Get(serial));
         }
     }
 }
