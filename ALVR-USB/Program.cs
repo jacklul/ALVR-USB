@@ -11,6 +11,8 @@ using IniParser;
 using IniParser.Model;
 using System.IO.Compression;
 using System.Collections.Concurrent;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace ALVRUSB
 {
@@ -170,7 +172,13 @@ namespace ALVRUSB
                 if (debug) LogMessage("ALVR Launcher not found", ConsoleColor.Cyan);
                 alvrPath = null;
             }
-            else if (debug) LogMessage($"ALVR Launcher found: {alvrPath}", ConsoleColor.Cyan);
+            else
+            {
+                if (debug) LogMessage($"ALVR Launcher found: {alvrPath}", ConsoleColor.Cyan);
+
+                if (!VerifyALVRConfig())
+                    return;
+            }
 
             LogMessage($"Initialized {typeof(Program).Assembly.GetName().Name}, version {VERSION}", null);
             if (debug) LogMessage("Checking initial ADB server status...", ConsoleColor.Cyan);
@@ -525,6 +533,34 @@ namespace ALVRUSB
 
                 LastOutput = LastOutput.Trim();
             }
+        }
+
+        private static bool VerifyALVRConfig()
+        {
+            string alvrConfigFile = Path.Combine(Path.GetDirectoryName(alvrPath), "session.json");
+
+            if (File.Exists(alvrConfigFile))
+            {
+                string data = File.ReadAllText(alvrConfigFile);
+                dynamic json = JsonConvert.DeserializeObject<dynamic>(data, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
+
+                if (json.sessionSettings.connection.clientDiscovery.enabled != false)
+                    LogMessage("Client discovery is enabled, this will potentially force ALVR client to use WiFi connection over USB!", ConsoleColor.Yellow);
+
+                if (json.sessionSettings.connection.streamProtocol.variant != "tcp")
+                {
+                    LogMessage("Stream protocol is not set to TCP - you won't be able to route it through ADB!", ConsoleColor.Red);
+                    return false;
+                }
+
+                if (json.sessionSettings.connection.streamPort != 9944)
+                {
+                    LogMessage("Usage of custom streaming port is not supported!", ConsoleColor.Red);
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }
