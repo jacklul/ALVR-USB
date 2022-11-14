@@ -48,6 +48,7 @@ namespace ALVRUSB
         private static bool logging = false;
         private static bool truncateLog = true;
 
+        private static bool logInitialized = false;
         private static bool adbLaunched = false;
         private static DeviceData currentDevice = null;
 
@@ -102,16 +103,16 @@ namespace ALVRUSB
                 if (!string.IsNullOrEmpty(clientActivityKey))
                     clientActivity = clientActivityKey;
                 
+
                 if (debug) 
-                    LogMessage($"Loaded ini file: {iniFile}", ConsoleColor.Cyan);
+                    LogMessage($"Loaded ini file: {iniFile}", ConsoleColor.DarkGray);
             }
 
             if (debug) PrintConfig();
 
             if (currentDirectory == null)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Path error!");
+                LogMessage("Path error!", ConsoleColor.Red);
                 return;
             }
 
@@ -142,46 +143,27 @@ namespace ALVRUSB
                         LogMessage("ADB executable not found!", ConsoleColor.Red);
                         return;
                     }
-                    else if (debug) LogMessage($"ADB executable downloaded and placed in local directory: {adbPath}", ConsoleColor.Cyan);
+                    else if (debug) LogMessage($"ADB executable downloaded and placed in local directory: {adbPath}", ConsoleColor.DarkGray);
                 }
-                else if (debug) LogMessage($"ADB executable found in global path: {adbPath}", ConsoleColor.Cyan);
+                else if (debug) LogMessage($"ADB executable found in global path: {adbPath}", ConsoleColor.DarkGray);
             }
-            else if (debug) LogMessage($"ADB executable found in local directory {adbPath}", ConsoleColor.Cyan);
-
-            if (logFile != null)
-            {
-                logFile = Path.Combine(currentDirectory, logFile);
-
-                if (truncateLog)
-                {
-                    File.WriteAllText(logFile, "");
-                    if (debug) LogMessage($"Log set to truncate", ConsoleColor.Cyan);
-                }
-            }
-
-            if (debug)
-            {
-                if (logging)
-                    LogMessage($"Logging is enabled", ConsoleColor.Cyan);
-                else
-                    LogMessage($"Logging is disabled", ConsoleColor.Cyan);
-            }
+            else if (debug) LogMessage($"ADB executable found in local directory {adbPath}", ConsoleColor.DarkGray);
 
             if (!File.Exists(alvrPath))
             {
-                if (debug) LogMessage("ALVR Launcher not found", ConsoleColor.Cyan);
+                if (debug) LogMessage("ALVR Launcher not found", ConsoleColor.DarkGray);
                 alvrPath = null;
             }
             else
             {
-                if (debug) LogMessage($"ALVR Launcher found: {alvrPath}", ConsoleColor.Cyan);
+                if (debug) LogMessage($"ALVR Launcher found: {alvrPath}", ConsoleColor.DarkGray);
 
                 if (!VerifyALVRConfig())
                     return;
             }
 
-            LogMessage($"Initialized {typeof(Program).Assembly.GetName().Name}, version {VERSION}", null);
-            if (debug) LogMessage("Checking initial ADB server status...", ConsoleColor.Cyan);
+            LogMessage($"Initialized {typeof(Program).Assembly.GetName().Name}, version {VERSION}");
+            if (debug) LogMessage("Checking initial ADB server status...", ConsoleColor.DarkGray);
 
             bool initialized = false;
             bool connected = false;
@@ -202,7 +184,7 @@ namespace ALVRUSB
                 {
                     if (initialized) LogMessage("ADB server connection lost...", ConsoleColor.Red);
 
-                    LogMessage("Starting ADB server...", ConsoleColor.Yellow);
+                    LogMessage("Starting ADB server...", ConsoleColor.Cyan);
                     server.StartServer(adbPath, false);
 
                     adbLaunched = true;
@@ -260,7 +242,7 @@ namespace ALVRUSB
 
                 if (!string.IsNullOrEmpty(disconnectCommand))
                 {
-                    if (debug) LogMessage($"Executing \"disconnect\" command: {disconnectCommand}", ConsoleColor.Cyan);
+                    if (debug) LogMessage($"Executing \"disconnect\" command: {disconnectCommand}", ConsoleColor.DarkGray);
                     ExecuteCommand(disconnectCommand);
                 }
             }
@@ -287,17 +269,17 @@ namespace ALVRUSB
                 maxTries--;
             }
 
-            if (debug) LogMessage($"DeviceData: {device.Model} {device.Name} {device.Product} {device.Serial}", ConsoleColor.Cyan);
+            if (debug) LogMessage($"DeviceData: {device.Model} {device.Name} {device.Product} {device.Serial}", ConsoleColor.DarkGray);
 
             if (!deviceNames.Contains(device.Product))
             {
-                LogMessage($"Skipped device: {(string.IsNullOrEmpty(device.Product) ? device.Serial : device.Product)}", ConsoleColor.Yellow);
+                LogMessage($"Skipped device: {(string.IsNullOrEmpty(device.Product) ? device.Serial : device.Product)}", ConsoleColor.DarkYellow);
                 return;
             }
 
             if (currentDevice != null)
             {
-                LogMessage($"Ports are already forwarded for another device: {currentDevice}", ConsoleColor.Red);
+                LogMessage($"Ports are already forwarded for another device: {currentDevice}", ConsoleColor.Yellow);
                 return;
             }
 
@@ -316,7 +298,7 @@ namespace ALVRUSB
 
             if (!string.IsNullOrEmpty(connectCommand))
             {
-                if (debug) LogMessage($"Executing \"connect\" command: {connectCommand}", ConsoleColor.Cyan);
+                if (debug) LogMessage($"Executing \"connect\" command: {connectCommand}", ConsoleColor.DarkGray);
                 ExecuteCommand(connectCommand);
             }
         }
@@ -327,7 +309,7 @@ namespace ALVRUSB
 
             if (pname.Length == 0)
             {
-                if (debug) LogMessage($"Process not found: vrmonitor.exe", ConsoleColor.Cyan);
+                if (debug) LogMessage($"Process not found: vrmonitor.exe", ConsoleColor.DarkGray);
 
                 pname = Process.GetProcessesByName(alvrPath);
 
@@ -347,9 +329,9 @@ namespace ALVRUSB
 
                     LogMessage("Launching ALVR Server...", ConsoleColor.Green);
                 }
-                else if (debug) LogMessage($"Process found: {alvrPath}", ConsoleColor.Cyan);
+                else if (debug) LogMessage($"Process found: {alvrPath}", ConsoleColor.DarkGray);
             }
-            else if (debug) LogMessage($"Process found: vrmonitor.exe", ConsoleColor.Cyan);
+            else if (debug) LogMessage($"Process found: vrmonitor.exe", ConsoleColor.DarkGray);
         }
 
         private static void LaunchALVRClient()
@@ -358,7 +340,7 @@ namespace ALVRUSB
 
             if (string.IsNullOrEmpty(outputReceiver.LastOutput))
             {
-                if (debug) LogMessage($"ALVR client is not installed on the device", ConsoleColor.Cyan);
+                if (debug) LogMessage($"ALVR client is not installed on the device", ConsoleColor.DarkGray);
                 return;
             }
 
@@ -369,7 +351,7 @@ namespace ALVRUSB
                 LogMessage("Launching ALVR client...", ConsoleColor.Green);
                 client.ExecuteRemoteCommand($"am start -n {clientActivity}", currentDevice, outputReceiver);
             }
-            else if (debug) LogMessage($"ALVR Client activity is already running", ConsoleColor.Cyan);
+            else if (debug) LogMessage($"ALVR Client activity is already running", ConsoleColor.DarkGray);
         }
 
         private static string WhereSearch(string filename)
@@ -384,8 +366,21 @@ namespace ALVRUSB
             return combinations.FirstOrDefault(File.Exists);
         }
 
-        private static void LogMessage(string message, ConsoleColor? color = ConsoleColor.Yellow, bool print = true)
+        private static void LogMessage(string message, ConsoleColor? color = ConsoleColor.White, bool print = true)
         {
+            if (!logInitialized)
+            {
+                if (logFile != null)
+                {
+                    logFile = Path.Combine(currentDirectory, logFile);
+
+                    if (truncateLog)
+                        File.WriteAllText(logFile, "");
+                }
+
+                logInitialized = true;
+            }
+
             string datetime = "[" + DateTime.Now.ToString() + "] ";
 
             if (logging)
@@ -460,7 +455,7 @@ namespace ALVRUSB
             string[] requiredFiles = { "adb.exe", "AdbWinApi.dll", "AdbWinUsbApi.dll" };
             string targetDirectory = Path.Combine(currentDirectory, "adb");
 
-            LogMessage($"Downloading ADB from URL: {downloadUrl}");
+            LogMessage($"Downloading ADB from URL: {downloadUrl}", ConsoleColor.Cyan);
 
             (new WebClient()).DownloadFile(downloadUrl, Path.Combine(currentDirectory, "adb.zip"));
 
