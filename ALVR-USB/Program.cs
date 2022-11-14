@@ -20,7 +20,7 @@ namespace ALVRUSB
     {
         public const string VERSION = "0.4.0";
         
-        private static readonly string[] deviceNames =
+        private static string[] deviceNames =
         {
             "monterey",  // Oculus Quest 1
             "vr_monterey",
@@ -44,6 +44,7 @@ namespace ALVRUSB
         private static string connectCommand = null;
         private static string disconnectCommand = null;
         private static string clientActivity = "alvr.client.quest/com.polygraphene.alvr.OvrActivity";
+        private static string customDevices = "";
         private static bool debug = false;
         private static bool logging = false;
         private static bool truncateLog = true;
@@ -75,6 +76,7 @@ namespace ALVRUSB
                 string connectCommandKey = iniData.GetKey("connectCommand");
                 string disconnectCommandKey = iniData.GetKey("disconnectCommand");
                 string clientActivityKey = iniData.GetKey("clientActivity");
+                string customDeviceNamesKey = iniData.GetKey("customDeviceNames");
 
                 if (!string.IsNullOrEmpty(debugKey))
                     debug = bool.Parse(debugKey);
@@ -103,6 +105,11 @@ namespace ALVRUSB
                 if (!string.IsNullOrEmpty(clientActivityKey))
                     clientActivity = clientActivityKey;
                 
+                if (!string.IsNullOrEmpty(customDeviceNamesKey))
+                {
+                    customDevices = customDeviceNamesKey;
+                    deviceNames = deviceNames.Union(customDevices.Split(',')).ToArray();
+                }
 
                 if (debug) 
                     LogMessage($"Loaded ini file: {iniFile}", ConsoleColor.DarkGray);
@@ -447,6 +454,7 @@ namespace ALVRUSB
             LogMessage($" connectCommand = {connectCommand}");
             LogMessage($" disconnectCommand = {disconnectCommand}");
             LogMessage($" clientActivity = {clientActivity}");
+            LogMessage($" customDevices = {customDevices}");
         }
 
         private static void DownloadADB()

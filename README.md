@@ -25,6 +25,7 @@ If the application refuses to start make sure you have **.NET Framework 4.8 Runt
 | connectCommand | "" | Executed when valid device connects |
 | disconnectCommand | "" | Executed when previously connected valid device disconnects |
 | clientActivity | "alvr.client.quest/com.polygraphene.alvr.OvrActivity" | ALVR client activity to launch when connected |
+| customDevices | "" | Custom ADB device names |
 
 #### Sample config:
 ```ini
