@@ -24,3 +24,12 @@ If the application refuses to start make sure you have **.NET Framework 4.8 Runt
 | connectCommand | "" | Executed when valid device connects |
 | disconnectCommand | "" | Executed when previously connected valid device disconnects |
 | clientActivity | "alvr.client.quest/com.polygraphene.alvr.OvrActivity" | ALVR client activity to launch when connected |
+
+#### Sample config:
+```ini
+debug=true
+logging=true
+logFile=ALVR-USB.log
+connectCommand=SoundVolumeView.exe /SetListenToThisDevice "Microphone" 0
+disconnectCommand=SoundVolumeView.exe /SetListenToThisDevice "Microphone" 1 && SoundVolumeView /SetPlaybackThroughDevice "Microphone" "CABLE Input"
+```
