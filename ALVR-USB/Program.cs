@@ -548,22 +548,42 @@ namespace ALVRUSB
                 dynamic json = JsonConvert.DeserializeObject<dynamic>(data, new JsonSerializerSettings { ContractResolver = new CamelCasePropertyNamesContractResolver() });
 
                 if (json.sessionSettings.connection.clientDiscovery.enabled != false)
-                    LogMessage("Client discovery is enabled, this will potentially force ALVR client to use WiFi connection over USB!", ConsoleColor.Yellow);
-
-                if (json.sessionSettings.connection.streamProtocol.variant != "tcp")
                 {
-                    LogMessage("Stream protocol is not set to TCP - you won't be able to route it through ADB!", ConsoleColor.Red);
+                    LogMessage("ALVR configuration error: Client discovery is enabled", ConsoleColor.Red);
+                    return false;
+                }
+
+                if (((string)json.sessionSettings.connection.streamProtocol.variant).ToLower() != "tcp")
+                {
+                    LogMessage("ALVR configuration error: Stream protocol is not set to TCP", ConsoleColor.Red);
                     return false;
                 }
 
                 if (json.sessionSettings.connection.streamPort != 9944)
                 {
-                    LogMessage("Usage of custom streaming port is not supported!", ConsoleColor.Red);
+                    LogMessage("ALVR configuration error: Streaming port is not set to 9944", ConsoleColor.Red);
+                    return false;
+                }
+
+                if (!CheckForLocalConnection(json.clientConnections))
+                {
+                    LogMessage("ALVR configuration error: No client with IP 127.0.0.1 is added", ConsoleColor.Red);
                     return false;
                 }
             }
 
             return true;
+        }
+
+        private static bool CheckForLocalConnection(dynamic data)
+        {
+            foreach (dynamic conn in data)
+                foreach (dynamic connA in conn)
+                    foreach (dynamic connB in connA.manualIps)
+                        if (connB == "127.0.0.1")
+                            return true;
+
+            return false;
         }
     }
 }
