@@ -17,7 +17,7 @@ If the application refuses to start make sure you have **.NET Framework 4.8 Runt
 | Variable | Default | Description |
 |----------|---------|-------------|
 | debug | false | Should we display extra messages in the console? |
-| logFile | "alvr-usb.log" | File for logging |
+| logFile | "ALVR-USB.log" | File for logging |
 | logging | false | Enable or disable logging |
 | truncateLog | true | Should we truncate log file for each session? |
 | alvrPath | "ALVR Launcher.exe" | Path to ALVR Launcher executable |
@@ -26,6 +26,8 @@ If the application refuses to start make sure you have **.NET Framework 4.8 Runt
 | disconnectCommand | "" | Executed when previously connected valid device disconnects |
 | clientActivity | "alvr.client.quest/com.polygraphene.alvr.OvrActivity" | ALVR client activity to launch when connected |
 | customDevices | "" | Custom ADB device names |
+
+Some functionalities can be disabled by setting their config variable to an empty string (`""`) .
 
 #### Sample config:
 ```ini

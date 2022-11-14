@@ -38,7 +38,7 @@ namespace ALVRUSB
 
         private static readonly string currentDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         private static string iniFile = Path.Combine(currentDirectory, Path.GetFileNameWithoutExtension(AppDomain.CurrentDomain.FriendlyName) + ".ini");
-        private static string logFile = Path.Combine(currentDirectory, Path.GetFileNameWithoutExtension(AppDomain.CurrentDomain.FriendlyName).ToLower() + ".log");
+        private static string logFile = Path.Combine(currentDirectory, Path.GetFileNameWithoutExtension(AppDomain.CurrentDomain.FriendlyName) + ".log");
         private static string alvrPath = Path.Combine(currentDirectory, "ALVR Launcher.exe");
         private static string adbPath = Path.Combine(currentDirectory, "adb\\adb.exe");
         private static string connectCommand = null;
