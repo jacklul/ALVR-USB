@@ -10,6 +10,7 @@ using System.Diagnostics;
 using IniParser;
 using IniParser.Model;
 using System.IO.Compression;
+using System.Collections.Concurrent;
 
 namespace ALVRUSB
 {
@@ -31,6 +32,7 @@ namespace ALVRUSB
         private static readonly AdbServer server = new AdbServer();
         private static readonly IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, AdbClient.AdbServerPort);
         private static readonly FileIniDataParser iniParser = new FileIniDataParser();
+        private static readonly LogShellOutputReceiver outputReceiver = new LogShellOutputReceiver();
 
         private static readonly string currentDirectory = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         private static string iniFile = Path.Combine(currentDirectory, Path.GetFileNameWithoutExtension(AppDomain.CurrentDomain.FriendlyName) + ".ini");
@@ -39,6 +41,7 @@ namespace ALVRUSB
         private static string adbPath = Path.Combine(currentDirectory, "adb\\adb.exe");
         private static string connectCommand = null;
         private static string disconnectCommand = null;
+        private static string clientActivity = "alvr.client.quest/com.polygraphene.alvr.OvrActivity";
         private static bool debug = false;
         private static bool logging = false;
         private static bool truncateLog = true;
@@ -68,6 +71,7 @@ namespace ALVRUSB
                 string adbPathKey = iniData.GetKey("adbPath");
                 string connectCommandKey = iniData.GetKey("connectCommand");
                 string disconnectCommandKey = iniData.GetKey("disconnectCommand");
+                string clientActivityKey = iniData.GetKey("clientActivity");
 
                 if (!string.IsNullOrEmpty(debugKey))
                     debug = bool.Parse(debugKey);
@@ -93,6 +97,9 @@ namespace ALVRUSB
                 if (!string.IsNullOrEmpty(disconnectCommandKey))
                     disconnectCommand = disconnectCommandKey;
 
+                if (!string.IsNullOrEmpty(clientActivityKey))
+                    clientActivity = clientActivityKey;
+                
                 if (debug) 
                     LogMessage($"Loaded ini file: {iniFile}", ConsoleColor.Cyan);
             }
@@ -296,6 +303,9 @@ namespace ALVRUSB
             if (alvrPath != null)
                 LaunchALVRServer();
 
+            if (!string.IsNullOrEmpty(clientActivity))
+                LaunchALVRClient();
+
             if (!string.IsNullOrEmpty(connectCommand))
             {
                 if (debug) LogMessage($"Executing \"connect\" command: {connectCommand}", ConsoleColor.Cyan);
@@ -332,6 +342,26 @@ namespace ALVRUSB
                 else if (debug) LogMessage($"Process found: {alvrPath}", ConsoleColor.Cyan);
             }
             else if (debug) LogMessage($"Process found: vrmonitor.exe", ConsoleColor.Cyan);
+        }
+
+        private static void LaunchALVRClient()
+        {
+            client.ExecuteRemoteCommand($"pm list packages {clientActivity.Split('/')[0]}", currentDevice, outputReceiver);
+
+            if (string.IsNullOrEmpty(outputReceiver.LastOutput))
+            {
+                if (debug) LogMessage($"ALVR client is not installed on the device", ConsoleColor.Cyan);
+                return;
+            }
+
+            client.ExecuteRemoteCommand($"dumpsys activity | grep {clientActivity}", currentDevice, outputReceiver);
+
+            if (string.IsNullOrEmpty(outputReceiver.LastOutput))
+            {
+                LogMessage("Launching ALVR client...", ConsoleColor.Green);
+                client.ExecuteRemoteCommand($"am start -n {clientActivity}", currentDevice, outputReceiver);
+            }
+            else if (debug) LogMessage($"ALVR Client activity is already running", ConsoleColor.Cyan);
         }
 
         private static string WhereSearch(string filename)
@@ -413,6 +443,7 @@ namespace ALVRUSB
             LogMessage($" adbPath = {adbPath}");
             LogMessage($" connectCommand = {connectCommand}");
             LogMessage($" disconnectCommand = {disconnectCommand}");
+            LogMessage($" clientActivity = {clientActivity}");
         }
 
         private static void DownloadADB()
@@ -464,6 +495,33 @@ namespace ALVRUSB
             }
 
             File.Delete("adb.zip");
+        }
+
+        // Based on https://github.com/dogzz9445/ADBForwarder
+        public class LogShellOutputReceiver : IShellOutputReceiver
+        {
+            public readonly ConcurrentQueue<string> LogShellOutputs = new ConcurrentQueue<string>();
+
+            public bool ParsesErrors => false;
+            public string LastOutput = "";
+
+            public void AddOutput(string line)
+            {
+                LogShellOutputs.Enqueue(line);
+            }
+
+            public void Flush()
+            {
+                LastOutput = "";
+                string outputBuffer;
+                while (!LogShellOutputs.IsEmpty)
+                {
+                    if (LogShellOutputs.TryDequeue(out outputBuffer))
+                    {
+                        LastOutput += outputBuffer;
+                    }
+                }
+            }
         }
     }
 }

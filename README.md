@@ -1,6 +1,6 @@
 # ALVR-USB
 
-This automates steps required for setting up [ALVR through USB connection](https://github.com/alvr-org/ALVR/wiki/Use-ALVR-through-a-USB-connection).
+This automates steps required for setting up [ALVR through USB connection](https://github.com/alvr-org/ALVR/wiki/Use-ALVR-through-a-USB-connection), will also automatically launch ALVR Server on the PC and Client on the headset.
 
 Based on [AtlasTheProto/ADBForwarder](https://github.com/AtlasTheProto/ADBForwarder), modified for personal use.
 
@@ -23,3 +23,4 @@ If the application refuses to start make sure you have **.NET Framework 4.8 Runt
 | adbPath | "adb\adb.exe" | Path to ADB executable |
 | connectCommand | "" | Executed when valid device connects |
 | disconnectCommand | "" | Executed when previously connected valid device disconnects |
+| clientActivity | "alvr.client.quest/com.polygraphene.alvr.OvrActivity" | ALVR client activity to launch when connected |
