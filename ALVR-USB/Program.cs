@@ -514,13 +514,16 @@ namespace ALVRUSB
             {
                 LastOutput = "";
                 string outputBuffer;
+
                 while (!LogShellOutputs.IsEmpty)
                 {
                     if (LogShellOutputs.TryDequeue(out outputBuffer))
                     {
-                        LastOutput += outputBuffer;
+                        LastOutput += outputBuffer + "\n";
                     }
                 }
+
+                LastOutput = LastOutput.Trim();
             }
         }
     }
