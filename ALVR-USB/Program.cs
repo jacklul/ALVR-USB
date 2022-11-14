@@ -44,7 +44,7 @@ namespace ALVRUSB
         private static bool truncateLog = true;
 
         private static bool adbLaunched = false;
-        private static string currentDevice = null;
+        private static DeviceData currentDevice = null;
 
         private static void Main()
         {
@@ -77,7 +77,7 @@ namespace ALVRUSB
 
                 if (!string.IsNullOrEmpty(loggingKey))
                     logging = bool.Parse(loggingKey);
-
+                
                 if (!string.IsNullOrEmpty(truncateLogKey))
                     truncateLog = bool.Parse(truncateLogKey);
 
@@ -126,7 +126,6 @@ namespace ALVRUSB
                     catch (Exception exception)
                     {
                         LogMessage(exception.Message, ConsoleColor.Red);
-                        return;
                     }
 
                     if (!File.Exists(adbPath))
@@ -233,30 +232,27 @@ namespace ALVRUSB
         private static void DeviceConnected(object sender, DeviceDataEventArgs e)
         {
             LogMessage($"Connected device: {e.Device.Serial}", ConsoleColor.DarkGreen);
-            ForwardPorts(e.Device);
+            ProcessDevice(e.Device);
         }
 
         private static void DeviceDisconnected(object sender, DeviceDataEventArgs e)
         {
             LogMessage($"Disconnected device: {e.Device.Serial}", ConsoleColor.DarkRed);
 
-            if (currentDevice == e.Device.Serial)
+            if (currentDevice.Serial == e.Device.Serial)
             {
                 currentDevice = null;
 
                 if (!string.IsNullOrEmpty(disconnectCommand))
                 {
                     if (debug) LogMessage($"Executing \"disconnect\" command: {disconnectCommand}", ConsoleColor.Cyan);
-
                     ExecuteCommand(disconnectCommand);
                 }
             }
         }
         
-        private static void ForwardPorts(DeviceData device)
+        private static void ProcessDevice(DeviceData device)
         {
-            if (debug) LogMessage($"ForwardPorts: {device}", ConsoleColor.Cyan);
-
             int maxTries = 5;
             while (string.IsNullOrEmpty(device.Product)) // DeviceConnected called without product set
             {
@@ -290,7 +286,7 @@ namespace ALVRUSB
                 return;
             }
 
-            currentDevice = device.Serial;
+            currentDevice = device;
 
             client.CreateForward(device, 9943, 9943);
             client.CreateForward(device, 9944, 9944);
@@ -298,17 +294,16 @@ namespace ALVRUSB
             LogMessage($"Forwarded ports for device: {device.Serial} ({device.Product})", ConsoleColor.Green);
 
             if (alvrPath != null)
-                LaunchALVR();
+                LaunchALVRServer();
 
             if (!string.IsNullOrEmpty(connectCommand))
             {
                 if (debug) LogMessage($"Executing \"connect\" command: {connectCommand}", ConsoleColor.Cyan);
-
                 ExecuteCommand(connectCommand);
             }
         }
 
-        private static void LaunchALVR()
+        private static void LaunchALVRServer()
         {
             Process[] pname = Process.GetProcessesByName("vrmonitor");
 
@@ -332,7 +327,7 @@ namespace ALVRUSB
                     };
                     process.Start();
 
-                    LogMessage($"Launching ALVR...", ConsoleColor.Green);
+                    LogMessage("Launching ALVR Server...", ConsoleColor.Green);
                 }
                 else if (debug) LogMessage($"Process found: {alvrPath}", ConsoleColor.Cyan);
             }
@@ -383,9 +378,7 @@ namespace ALVRUSB
 
             return false;
         }
-        static ConsoleEventDelegate handler;   // Keeps it from getting garbage collected
-
-        // Pinvoke
+        static ConsoleEventDelegate handler;
         private delegate bool ConsoleEventDelegate(int eventType);
         [DllImport("kernel32.dll", SetLastError = true)]
         private static extern bool SetConsoleCtrlHandler(ConsoleEventDelegate callback, bool add);
