@@ -9,12 +9,13 @@ using SharpAdbClient;
 using System.Diagnostics;
 using IniParser;
 using IniParser.Model;
+using System.IO.Compression;
 
 namespace ALVRUSB
 {
     internal class Program
     {
-        public const string VERSION = "0.3.0";
+        public const string VERSION = "0.4.0";
         
         private static readonly string[] deviceNames =
         {
@@ -118,8 +119,22 @@ namespace ALVRUSB
 
                 if (!File.Exists(adbPath))
                 {
-                    LogMessage("ADB executable not found!", ConsoleColor.Red);
-                    return;
+                    try
+                    {
+                        DownloadADB();
+                    }
+                    catch (Exception exception)
+                    {
+                        LogMessage(exception.Message, ConsoleColor.Red);
+                        return;
+                    }
+
+                    if (!File.Exists(adbPath))
+                    {
+                        LogMessage("ADB executable not found!", ConsoleColor.Red);
+                        return;
+                    }
+                    else if (debug) LogMessage($"ADB executable downloaded and placed in local directory: {adbPath}", ConsoleColor.Cyan);
                 }
                 else if (debug) LogMessage($"ADB executable found in global path: {adbPath}", ConsoleColor.Cyan);
             }
@@ -405,6 +420,57 @@ namespace ALVRUSB
             LogMessage($" adbPath = {adbPath}");
             LogMessage($" connectCommand = {connectCommand}");
             LogMessage($" disconnectCommand = {disconnectCommand}");
+        }
+
+        private static void DownloadADB()
+        {
+            var downloadUrl = "https://dl.google.com/android/repository/platform-tools-latest-windows.zip";
+            string[] requiredFiles = { "adb.exe", "AdbWinApi.dll", "AdbWinUsbApi.dll" };
+            string targetDirectory = Path.Combine(currentDirectory, "adb");
+
+            LogMessage($"Downloading ADB from URL: {downloadUrl}");
+
+            (new WebClient()).DownloadFile(downloadUrl, Path.Combine(currentDirectory, "adb.zip"));
+
+            if (File.Exists("adb.zip"))
+            {
+                LogMessage($"Download successful, extracting...", ConsoleColor.Green);
+
+                if (!Directory.Exists(targetDirectory))
+                {
+                    Directory.CreateDirectory(targetDirectory);
+                    if (debug) LogMessage($"Created directory: {targetDirectory}", ConsoleColor.Cyan);
+                }
+
+                using (ZipArchive archive = ZipFile.OpenRead(Path.Combine(currentDirectory, "adb.zip")))
+                {
+                    foreach (ZipArchiveEntry entry in archive.Entries.Where(e => requiredFiles.Contains(e.Name)))
+                    {
+                        entry.ExtractToFile(Path.Combine(targetDirectory, entry.Name));
+                    }
+                }
+
+                bool extractOk = true;
+                foreach (string requiredFile in requiredFiles)
+                {
+                    if (!File.Exists(Path.Combine(targetDirectory, requiredFile)))
+                    {
+                        extractOk = false;
+                        break;
+                    }
+                }
+
+                if (extractOk)
+                    LogMessage($"Extraction successful", ConsoleColor.Green);
+                else
+                    LogMessage($"Extraction failed", ConsoleColor.Red);
+            }
+            else
+            {
+                LogMessage($"Download failed", ConsoleColor.Red);
+            }
+
+            File.Delete("adb.zip");
         }
     }
 }
