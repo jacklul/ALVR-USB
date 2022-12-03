@@ -19,6 +19,7 @@ If the application refuses to start make sure you have **.NET Framework 4.8 Runt
 | debug | false | Should we display extra messages in the console? |
 | logFile | "ALVR-USB.log" | File for logging |
 | logging | false | Enable or disable logging |
+| noVerify | false | Skip ALVR config verification |
 | truncateLog | true | Should we truncate log file for each session? |
 | alvrPath | "ALVR Launcher.exe" | Path to ALVR Launcher executable |
 | adbPath | "adb\adb.exe" | Path to ADB executable |

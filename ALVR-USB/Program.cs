@@ -48,6 +48,7 @@ namespace ALVRUSB
         private static bool debug = false;
         private static bool logging = false;
         private static bool truncateLog = true;
+        private static bool noVerify = false;
 
         private static bool logInitialized = false;
         private static bool adbLaunched = false;
@@ -71,6 +72,7 @@ namespace ALVRUSB
                 string logFileKey = iniData.GetKey("logFile");
                 string loggingKey = iniData.GetKey("logging");
                 string truncateLogKey = iniData.GetKey("truncateLog");
+                string noVerifyKey = iniData.GetKey("noVerify");
                 string alvrPathKey = iniData.GetKey("alvrPath");
                 string adbPathKey = iniData.GetKey("adbPath");
                 string connectCommandKey = iniData.GetKey("connectCommand");
@@ -89,6 +91,9 @@ namespace ALVRUSB
                 
                 if (!string.IsNullOrEmpty(truncateLogKey))
                     truncateLog = bool.Parse(truncateLogKey);
+
+                if (!string.IsNullOrEmpty(noVerifyKey))
+                    noVerify = bool.Parse(noVerifyKey);
 
                 if (!string.IsNullOrEmpty(alvrPathKey))
                     alvrPath = alvrPathKey;
@@ -165,7 +170,7 @@ namespace ALVRUSB
             {
                 if (debug) LogMessage($"ALVR Launcher found: {alvrPath}", ConsoleColor.DarkGray);
 
-                if (!VerifyALVRConfig())
+                if (!noVerify && !VerifyALVRConfig())
                     return;
             }
 
@@ -449,6 +454,7 @@ namespace ALVRUSB
             LogMessage($" logFile = {logFile}");
             LogMessage($" logging = {logging}");
             LogMessage($" truncateLog = {truncateLog}");
+            LogMessage($" noVerify = {noVerify}");
             LogMessage($" alvrPath = {alvrPath}");
             LogMessage($" adbPath = {adbPath}");
             LogMessage($" connectCommand = {connectCommand}");
