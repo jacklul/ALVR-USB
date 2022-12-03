@@ -126,12 +126,14 @@ namespace ALVRUSB
             if (currentDirectory == null)
             {
                 LogMessage("Path error!", ConsoleColor.Red);
+                Pause();
                 return;
             }
 
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 LogMessage("Unsupported platform!", ConsoleColor.Red);
+                Pause();
                 return;
             }
 
@@ -154,6 +156,7 @@ namespace ALVRUSB
                     if (!File.Exists(adbPath))
                     {
                         LogMessage("ADB executable not found!", ConsoleColor.Red);
+                        Pause();
                         return;
                     }
                     else if (debug) LogMessage($"ADB executable downloaded and placed in local directory: {adbPath}", ConsoleColor.DarkGray);
@@ -172,7 +175,10 @@ namespace ALVRUSB
                 if (debug) LogMessage($"ALVR Launcher found: {alvrPath}", ConsoleColor.DarkGray);
 
                 if (!noVerify && !VerifyALVRConfig())
+                {
+                    Pause();
                     return;
+                }
             }
 
             LogMessage($"Initialized {typeof(Program).Assembly.GetName().Name}, version {VERSION}");
@@ -219,6 +225,7 @@ namespace ALVRUSB
                         else
                             LogMessage(socketException.Message, ConsoleColor.Red);
 
+                        Pause();
                         return;
                     }
                 }
@@ -598,6 +605,12 @@ namespace ALVRUSB
                             return true;
 
             return false;
+        }
+
+        private static void Pause()
+        {
+            Console.Write("Press any key to exit... ");
+            Console.ReadKey();
         }
     }
 }
