@@ -52,6 +52,7 @@ namespace ALVRUSB
 
         private static bool logInitialized = false;
         private static bool adbLaunched = false;
+        private static long alvrLaunched = 0;
         private static DeviceData currentDevice = null;
 
         private static void Main()
@@ -317,6 +318,11 @@ namespace ALVRUSB
 
         private static void LaunchALVRServer()
         {
+            long unixTimestamp = DateTimeOffset.Now.ToUnixTimeSeconds();
+
+            if (alvrLaunched + 15 > unixTimestamp)
+                return;
+
             Process[] pname = Process.GetProcessesByName("vrmonitor");
 
             if (pname.Length == 0)
@@ -327,6 +333,8 @@ namespace ALVRUSB
 
                 if (pname.Length == 0)
                 {
+                    alvrLaunched = unixTimestamp;
+
                     var process = new Process
                     {
                         StartInfo = new ProcessStartInfo
@@ -339,7 +347,7 @@ namespace ALVRUSB
                     };
                     process.Start();
 
-                    LogMessage("Launching ALVR Server...", ConsoleColor.Green);
+                    LogMessage("Launching ALVR server...", ConsoleColor.Green);
                 }
                 else if (debug) LogMessage($"Process found: {alvrPath}", ConsoleColor.DarkGray);
             }
