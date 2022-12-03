@@ -18,7 +18,7 @@ namespace ALVRUSB
 {
     internal class Program
     {
-        public const string VERSION = "0.5.0";
+        public const string VERSION = "0.6.0";
         
         private static string[] deviceNames =
         {
