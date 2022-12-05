@@ -18,7 +18,7 @@ namespace ALVRUSB
 {
     internal class Program
     {
-        public const string VERSION = "0.6.0";
+        public const string VERSION = "0.7.0";
         
         private static string[] deviceNames =
         {
@@ -371,14 +371,30 @@ namespace ALVRUSB
                 return;
             }
 
-            client.ExecuteRemoteCommand($"dumpsys activity | grep {clientActivity}", currentDevice, outputReceiver);
-
-            if (string.IsNullOrEmpty(outputReceiver.LastOutput))
+            int retries = 60;
+            do
             {
-                LogMessage("Launching ALVR client...", ConsoleColor.Green);
-                client.ExecuteRemoteCommand($"am start -n {clientActivity}", currentDevice, outputReceiver);
-            }
-            else if (debug) LogMessage($"ALVR Client activity is already running", ConsoleColor.DarkGray);
+                client.ExecuteRemoteCommand($"dumpsys activity | grep com.oculus.systemux", currentDevice, outputReceiver);
+
+                if (!string.IsNullOrEmpty(outputReceiver.LastOutput))
+                {
+                    client.ExecuteRemoteCommand($"dumpsys activity | grep {clientActivity}", currentDevice, outputReceiver);
+
+                    if (string.IsNullOrEmpty(outputReceiver.LastOutput))
+                    {
+                        LogMessage("Launching ALVR client...", ConsoleColor.Green);
+                        client.ExecuteRemoteCommand($"am start -n {clientActivity}", currentDevice, outputReceiver);
+                    }
+                    else if (debug) LogMessage($"ALVR Client activity is already running", ConsoleColor.DarkGray);
+
+                    return;
+                }
+
+                retries--;
+                Thread.Sleep(1000);
+            } while (retries > 0);
+
+            LogMessage($"Could not launch ALVR Client - system UI not loaded", ConsoleColor.DarkGray);
         }
 
         private static string WhereSearch(string filename)
