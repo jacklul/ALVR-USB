@@ -18,7 +18,7 @@ namespace ALVRUSB
 {
     internal class Program
     {
-        public const string VERSION = "0.7.0";
+        public const string VERSION = "0.8.0";
         
         private static string[] deviceNames =
         {
@@ -43,7 +43,6 @@ namespace ALVRUSB
         private static string adbPath = Path.Combine(currentDirectory, "adb\\adb.exe");
         private static string connectCommand = null;
         private static string disconnectCommand = null;
-        private static string clientActivity = "alvr.client.quest/com.polygraphene.alvr.OvrActivity";
         private static string customDevices = "";
         private static bool debug = false;
         private static bool logging = false;
@@ -78,7 +77,6 @@ namespace ALVRUSB
                 string adbPathKey = iniData.GetKey("adbPath");
                 string connectCommandKey = iniData.GetKey("connectCommand");
                 string disconnectCommandKey = iniData.GetKey("disconnectCommand");
-                string clientActivityKey = iniData.GetKey("clientActivity");
                 string customDeviceNamesKey = iniData.GetKey("customDeviceNames");
 
                 if (!string.IsNullOrEmpty(debugKey))
@@ -108,9 +106,6 @@ namespace ALVRUSB
                 if (!string.IsNullOrEmpty(disconnectCommandKey))
                     disconnectCommand = disconnectCommandKey;
 
-                if (!string.IsNullOrEmpty(clientActivityKey))
-                    clientActivity = clientActivityKey;
-                
                 if (!string.IsNullOrEmpty(customDeviceNamesKey))
                 {
                     customDevices = customDeviceNamesKey;
@@ -313,9 +308,6 @@ namespace ALVRUSB
             if (alvrPath != null)
                 LaunchALVRServer();
 
-            if (!string.IsNullOrEmpty(clientActivity))
-                LaunchALVRClient();
-
             if (!string.IsNullOrEmpty(connectCommand))
             {
                 if (debug) LogMessage($"Executing \"connect\" command: {connectCommand}", ConsoleColor.DarkGray);
@@ -359,42 +351,6 @@ namespace ALVRUSB
                 else if (debug) LogMessage($"Process found: {alvrPath}", ConsoleColor.DarkGray);
             }
             else if (debug) LogMessage($"Process found: vrmonitor.exe", ConsoleColor.DarkGray);
-        }
-
-        private static void LaunchALVRClient()
-        {
-            client.ExecuteRemoteCommand($"pm list packages {clientActivity.Split('/')[0]}", currentDevice, outputReceiver);
-
-            if (string.IsNullOrEmpty(outputReceiver.LastOutput))
-            {
-                if (debug) LogMessage($"ALVR client is not installed on the device", ConsoleColor.DarkGray);
-                return;
-            }
-
-            int retries = 60;
-            do
-            {
-                client.ExecuteRemoteCommand($"dumpsys activity | grep com.oculus.systemux", currentDevice, outputReceiver);
-
-                if (!string.IsNullOrEmpty(outputReceiver.LastOutput))
-                {
-                    client.ExecuteRemoteCommand($"dumpsys activity | grep {clientActivity}", currentDevice, outputReceiver);
-
-                    if (string.IsNullOrEmpty(outputReceiver.LastOutput))
-                    {
-                        LogMessage("Launching ALVR client...", ConsoleColor.Green);
-                        client.ExecuteRemoteCommand($"am start -n {clientActivity}", currentDevice, outputReceiver);
-                    }
-                    else if (debug) LogMessage($"ALVR Client activity is already running", ConsoleColor.DarkGray);
-
-                    return;
-                }
-
-                retries--;
-                Thread.Sleep(1000);
-            } while (retries > 0);
-
-            LogMessage($"Could not launch ALVR Client - system UI not loaded", ConsoleColor.DarkGray);
         }
 
         private static string WhereSearch(string filename)
@@ -490,7 +446,6 @@ namespace ALVRUSB
             LogMessage($" adbPath = {adbPath}");
             LogMessage($" connectCommand = {connectCommand}");
             LogMessage($" disconnectCommand = {disconnectCommand}");
-            LogMessage($" clientActivity = {clientActivity}");
             LogMessage($" customDevices = {customDevices}");
         }
 

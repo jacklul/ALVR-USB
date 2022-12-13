@@ -25,7 +25,6 @@ If the application refuses to start make sure you have **.NET Framework 4.8 Runt
 | adbPath | "adb\adb.exe" | Path to ADB executable |
 | connectCommand | "" | Executed when valid device connects |
 | disconnectCommand | "" | Executed when previously connected valid device disconnects |
-| clientActivity | "alvr.client.quest/com.polygraphene.alvr.OvrActivity" | ALVR client activity to launch when connected |
 | customDevices | "" | Custom ADB device names |
 
 Some functionalities can be disabled by setting their config variable to an empty string (`""`) .
