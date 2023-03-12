@@ -1,6 +1,6 @@
 # ALVR-USB
 
-This automates steps required for setting up [ALVR through USB connection](https://github.com/alvr-org/ALVR/wiki/Use-ALVR-through-a-USB-connection), will also automatically launch ALVR Server on the PC and Client on the headset.
+This automates steps required for setting up [ALVR through USB connection](https://github.com/alvr-org/ALVR/wiki/Use-ALVR-through-a-USB-connection), will also automatically launch ALVR Server on the PC.
 
 Based on [AtlasTheProto/ADBForwarder](https://github.com/AtlasTheProto/ADBForwarder), modified for personal use.
 
